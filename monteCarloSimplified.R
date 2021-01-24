@@ -1,5 +1,7 @@
+# Authors Ali Uppal and Steven Yee
+# ECON220E
+# Synthetic Control Monte Carlo Simulation
 
-setwd("/Users/stevenyee/Documents/UCSD/UCSDEconomics/Winter2021/ECON220E/monteCarlo")
 rm(list = ls())
 # install.packages("pracma")
 # install.packages("matrixcalc")
