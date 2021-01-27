@@ -218,12 +218,6 @@ simulate <- function(case,sims,lambda_vals,lambda_start,lambda_end,varying, T0,T
     return(list(pvalue_RMSPE_mat=pvalue_RMSPE_mat, pvalue_tstat_mat=pvalue_tstat_mat,pvalue_post_mat=pvalue_post_mat, synth_avg=synth_avg, treated_avg=treated_avg))
 }
 
-simulation = simulate(case,sims,lambda_vals,lambda_start,lambda_end, varying, T0,T1,J0,J1)
-
-plot(linspace(1,T1,T1), simulation$treated_avg[1,], type = "l")
-lines(linspace(1,T1,T1), simulation$synth_avg[1,], type="l")
-
-
 gen_power_curve <- function(case, varying, lambda_start,lambda_end, pvalue_RMSPE_mat, pvalue_tstat_mat, pvalue_post_mat, size){
     lambda_vals = dim(pvalue_RMSPE_mat)[2] - 1
     lambda_seq = linspace(lambda_start, lambda_end, lambda_vals+1)
@@ -263,51 +257,9 @@ check_size_control <-function(case, varying,lambda_vals,lambda_start,lambda_end,
 
 # gen_power_curve(case, varying, lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat, size)
 
+simulation = simulate(case,sims,lambda_vals,lambda_start,lambda_end, varying, T0,T1,J0,J1)
+
+# plot(linspace(1,T1,T1), simulation$treated_avg[1,], type = "l")
+# lines(linspace(1,T1,T1), simulation$synth_avg[1,], type="l")
+
 check_size_control(case, varying,lambda_vals,lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat,size_vals)
-
-
-
-# 
-# # Plot p-values conditional on size
-# space = 10
-# size = linspace(0,1,space+1)
-# pvalue_plot = matrix(NA,space+1,4)
-# 
-# for (i in 0:space+1){
-#     pvalue_plot[i,1]=size[i]
-#     pvalue_plot[i,2]=mean(simulation$pvalue_RMSPE_mat[,1] <= size[i])
-#     pvalue_plot[i,3]=mean(simulation$pvalue_tstat_mat[,1] <= size[i])
-#     pvalue_plot[i,4]=mean(simulation$pvalue_post_mat[,1] <= size[i])
-# }
-# 
-# plot(pvalue_plot[,1],pvalue_plot[,2],type="l",col="red")
-# lines(pvalue_plot[,1],pvalue_plot[,3],type="l",col="blue")
-# lines(pvalue_plot[,1],pvalue_plot[,4],type="l",col="black")
-# legend("topleft", legend=c("RMSPE", "T-stat","Post-Treatment"),
-#        col=c("red", "blue","black"),lty=1:1, cex=0.8)
-
-
-
-
-
-
-
-# # 
-# # # Plot p-values conditional on size
-# space = 10
-# size = linspace(0,1,space+1)
-# pvalue_plot = matrix(NA,space+1,4)
-# 
-# for (i in 0:space+1){
-#     pvalue_plot[i,1]=size[i]
-#     pvalue_plot[i,2]=colMeans(pvalue_RMSPE_mat <= size[i])
-#     pvalue_plot[i,3]=colMeans(pvalue_tstat_mat <= size[i])
-#     pvalue_plot[i,4]=colMeans(pvalue_post_mat <= size[i])
-# }
-# 
-# plot(pvalue_plot[,1],pvalue_plot[,2],type="l",col="red")
-# lines(pvalue_plot[,1],pvalue_plot[,3],type="l",col="blue")
-# lines(pvalue_plot[,1],pvalue_plot[,4],type="l",col="black")
-# legend("topleft", legend=c("RMSPE", "T-stat","Post-Treatment"),
-#        col=c("red", "blue","black"),lty=1:1, cex=0.8)
-
