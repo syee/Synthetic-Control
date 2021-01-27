@@ -169,8 +169,8 @@ J1 = J + 1
 
 # Simulation Parameters
 sims = 1000
-lambda_vals = 0
-lambda_seq = linspace(0.5, 0.5, lambda_vals+1)
+lambda_vals = 10
+lambda_seq = linspace(0, 2, lambda_vals+1)
 
 pvalue_RMSPE_mat = matrix(NA,sims,lambda_vals+1)
 pvalue_tstat_mat = matrix(NA,sims,lambda_vals+1)
@@ -206,32 +206,9 @@ for (i in 0:space+1){
     pvalue_plot[i,4]=colMeans(pvalue_post_mat <= size[i])
 }
 
-plot(pvalue_plot[,1],pvalue_plot[,2])
-lines(pvalue_plot[,1],pvalue_plot[,3])
-lines(pvalue_plot[,1],pvalue_plot[,4])
-
-
-# 
-# space = 10
-# size = linspace(0,1,space+1)
-# pvalue_plot = matrix(NA,space+1,2)
-# 
-# for (i in 0:space+1){
-#     pvalue_plot[i,1]=size[i]
-#     pvalue_plot[i,2]=colMeans(pvalue_tstat_mat <= size[i])
-# }
-# 
-# plot(pvalue_plot[,1],pvalue_plot[,2])
-
-
-# #Rejection rates
-# size = 0.10
-# rejection.mat = pvalue_RMSPE_mat <= size
-# colMeans(rejection.mat)
-# # colMeans(pvalue_RMSPE_mat <= 0.1)
-# 
-# colMeans(pvalue_RMSPE_mat <= 0.1)
-# 
-# p.value.avg = colMeans(pvalue_RMSPE_mat)
-# p.value.avg
+plot(pvalue_plot[,1],pvalue_plot[,2],type="l",col="red")
+lines(pvalue_plot[,1],pvalue_plot[,3],type="l",col="blue")
+lines(pvalue_plot[,1],pvalue_plot[,4],type="l",col="black")
+legend("topleft", legend=c("RMSPE", "T-stat","Post-Treatment"),
+       col=c("red", "blue","black"),lty=1:1, cex=0.8)
 
