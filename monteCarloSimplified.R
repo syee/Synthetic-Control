@@ -67,19 +67,22 @@ ri <- function(observed,T0,T1){
         effect_pre = effect[1:T0]
         effect_post = effect[(T0+1):T1]
         
-        # Results from each test statitic for a given unit j
+        # Test Statistics
         RMSPE[j] = sqrt(mean(effect_post^2))/sqrt(mean(effect_pre^2))
         
         average_treat = mean(effect[(T0+1):T1])
         std_treat = std(effect[(T0+1):T1])
         T_stat[j] = abs((average_treat/(T1-T0))/(std_treat/sqrt(T1-T0)))
+
+        Post_treatment_avg[j] = mean(abs(effect[(T0+1):T1]))
     }
     
     # Pvalue for each test stat is proportion of placebos with a greater test stat
     # than actual treated unit which is the first entry in the matrix
     pvalue_RMPSE = mean(RMSPE>=RMSPE[1])
     pvalue_tstat = mean(T_stat >= T_stat[1])
-    return(list(pvalue_RMSPE=pvalue_RMPSE, pvalue_tstat=pvalue_tstat))
+    pvalue_post = mean(Post_treatment_avg >= Post_treatment_avg[1])
+    return(list(pvalue_RMSPE=pvalue_RMPSE, pvalue_tstat=pvalue_tstat, pvalue_post=pvalue_post))
 }
 
 gen_data<- function(case, J1, T1){
@@ -107,7 +110,6 @@ gen_data<- function(case, J1, T1){
         
         # Generate untreated outcomes
         data_mat = unit_fe + time_fe_mat + eps
-        
     }
     else if(case == 2){
         # Creating T1xJ1 iid shocks
@@ -129,7 +131,6 @@ gen_data<- function(case, J1, T1){
         
         # Generate untreated outcomes
         data_mat = unit_fe + time_fe_mat + eps
-        
     }
     else if (case == 1){
         data_mat = matrix(rnorm(J1*T1),T1,J1)
@@ -169,12 +170,13 @@ J1 = J + 1
 # Simulation Parameters
 sims = 1000
 lambda_vals = 0
-lambda_seq = linspace(0.25, 0.25, lambda_vals+1)
+lambda_seq = linspace(0.5, 0.5, lambda_vals+1)
 
 pvalue_RMSPE_mat = matrix(NA,sims,lambda_vals+1)
 pvalue_tstat_mat = matrix(NA,sims,lambda_vals+1)
+pvalue_post_mat = matrix(NA,sims,lambda_vals+1)
 
-case = 1
+case = 3
 
 for (iter1 in 1:(lambda_vals+1)){
     lambda_test = lambda_seq[iter1]
@@ -187,6 +189,7 @@ for (iter1 in 1:(lambda_vals+1)){
         results = ri(observed, T0, T1)
         pvalue_RMSPE_mat[iter2, iter1] = results$pvalue_RMSPE
         pvalue_tstat_mat[iter2, iter1] = results$pvalue_tstat
+        pvalue_post_mat[iter2, iter1] = results$pvalue_post
     }
     
 }
@@ -194,16 +197,18 @@ for (iter1 in 1:(lambda_vals+1)){
 # Plot p-values conditional on size
 space = 10
 size = linspace(0,1,space+1)
-pvalue_plot = matrix(NA,space+1,3)
+pvalue_plot = matrix(NA,space+1,4)
 
 for (i in 0:space+1){
     pvalue_plot[i,1]=size[i]
     pvalue_plot[i,2]=colMeans(pvalue_RMSPE_mat <= size[i])
     pvalue_plot[i,3]=colMeans(pvalue_tstat_mat <= size[i])
+    pvalue_plot[i,4]=colMeans(pvalue_post_mat <= size[i])
 }
 
 plot(pvalue_plot[,1],pvalue_plot[,2])
 lines(pvalue_plot[,1],pvalue_plot[,3])
+lines(pvalue_plot[,1],pvalue_plot[,4])
 
 
 # 
