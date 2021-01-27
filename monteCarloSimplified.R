@@ -169,10 +169,10 @@ sims = 200
 lambda_vals = 5
 lambda_start = 0
 lambda_end = 1
-alpha = 0.10
+size = 0.10
 
 case = 1
-varying = TRUE
+varying = FALSE
 
 simulate <- function(case,sims,lambda_vals,lambda_start,lambda_end,varying, T0,T1,J0,J1){
     
@@ -216,14 +216,14 @@ gen_power_curve <- function(case, varying, lambda_start,lambda_end, pvalue_RMSPE
         pvalue_plot[i,4]=mean(pvalue_post_mat[,i] <= size)
     }
     
-    plot(pvalue_plot[,1],pvalue_plot[,2],type="l",col="red")
+    plot(pvalue_plot[,1],pvalue_plot[,2],type="l",col="red", ylim=c(0,1))
     lines(pvalue_plot[,1],pvalue_plot[,3],type="l",col="blue")
     lines(pvalue_plot[,1],pvalue_plot[,4],type="l",col="black")
-    legend("bottomright", legend=c("RMSPE", "T-stat","Post-Treatment"),
+    legend("topleft", legend=c("RMSPE", "T-stat","Post-Treatment"),
            col=c("red", "blue","black"),lty=1:1, cex=0.8)
 }
 
-gen_power_curve(case, varying, lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat, alpha)
+gen_power_curve(case, varying, lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat, size)
 
 
 
