@@ -145,7 +145,6 @@ gen_data<- function(case, J1, T1){
     return(data_mat)
 }
 
-
 gen_treatment <- function(case, lambda, T0, T1){
     treatment_vec = rep(0, T1)
     treatment_vec[(T0+1):T1] = lambda
@@ -160,27 +159,11 @@ gen_treatment_varying <- function(case, lambda, T0, T1){
     return(treatment_vec)
 }
 
-
 apply_treatment <- function(case, observed, treatment_vec){
     treated_data = observed
     treated_data[,1] = treated_data[,1] + treatment_vec # This adds the treatment vector to the first column of untreated values. This makes the first column the treated unit
     return(treated_data)
 }
-
-
-T1  = 25
-T0 = 15
-J0 = 19
-J1 = J0 + 1
-sims = 1000
-lambda_vals = 0
-size_vals = J1
-lambda_start = 1
-lambda_end = 1
-size = 0.10
-
-case = 1
-varying = TRUE
 
 simulate <- function(case,sims,lambda_vals,lambda_start,lambda_end,varying, T0,T1,J0,J1){
     
@@ -212,7 +195,7 @@ simulate <- function(case,sims,lambda_vals,lambda_start,lambda_end,varying, T0,T
             treated_sum[iter1,] = treated_sum[iter1,] + results$actual_treated
         }
     }
-
+    
     synth_avg = synth_sum / sims
     treated_avg = treated_sum / sims
     return(list(pvalue_RMSPE_mat=pvalue_RMSPE_mat, pvalue_tstat_mat=pvalue_tstat_mat,pvalue_post_mat=pvalue_post_mat, synth_avg=synth_avg, treated_avg=treated_avg))
@@ -255,11 +238,27 @@ check_size_control <-function(case, varying,lambda_vals,lambda_start,lambda_end,
            col=c("red", "blue","black"),lty=1:1, cex=0.8)
 }
 
-# gen_power_curve(case, varying, lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat, size)
+
+T1  = 25
+T0 = 15
+J0 = 19
+J1 = J0 + 1
+sims = 1000
+lambda_vals = 0
+size_vals = J1
+lambda_start = 1
+lambda_end = 1
+size = 0.10
+
+case = 3
+varying = FALSE
+
 
 simulation = simulate(case,sims,lambda_vals,lambda_start,lambda_end, varying, T0,T1,J0,J1)
 
-# plot(linspace(1,T1,T1), simulation$treated_avg[1,], type = "l")
-# lines(linspace(1,T1,T1), simulation$synth_avg[1,], type="l")
+plot(linspace(1,T1,T1), simulation$treated_avg[1,], type = "l", ylim=c(-5,5))
+lines(linspace(1,T1,T1), simulation$synth_avg[1,], type="l")
 
-check_size_control(case, varying,lambda_vals,lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat,size_vals)
+# check_size_control(case, varying,lambda_vals,lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat,size_vals)
+
+# gen_power_curve(case, varying, lambda_start,lambda_end, simulation$pvalue_RMSPE_mat, simulation$pvalue_tstat_mat, simulation$pvalue_post_mat, size)
