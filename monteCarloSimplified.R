@@ -47,6 +47,7 @@ ri <- function(observed,T0,T1){
     
     # Test statistics under consideration
     RMSPE = rep(NA,J1)
+    T_stat = rep(NA,J1)
     
     # RI requires looping over all units (assigning each one the treatment status)
     for (j in 1:(J1)){
@@ -67,12 +68,16 @@ ri <- function(observed,T0,T1){
         
         # Results from each test statitic for a given unit j
         RMSPE[j] = sqrt(mean(effect_post^2))/sqrt(mean(effect_pre^2))
+        average_treat = mean(effect[(T0+1):T1])
+        std_treat = std(effect[(T0+1):T1])
+        T_stat[j] = abs((average_treat/(T1-T0))/(std_treat/sqrt(T1-T0)))
     }
     
     # Pvalue for each test stat is proportion of placebos with a greater test stat
     # than actual treated unit which is the first entry in the matrix
     pvalue_RMPSE = mean(RMSPE>=RMSPE[1])
-    return(list(pvalue_RMSPE=pvalue_RMPSE))
+    pvalue_tstat = mean(T_stat >= T_stat[1])
+    return(list(pvalue_RMSPE=pvalue_RMPSE, pvalue_tstat=pvalue_tstat))
 }
 
 gen_data<- function(case, J1, T1){
@@ -192,24 +197,24 @@ J1 = J + 1
 # Simulation Parameters
 sims = 1000
 lambda_vals = 0
-lambda_seq = linspace(0, 0, lambda_vals+1)
+lambda_seq = linspace(0.25, 0.25, lambda_vals+1)
 
 pvalue_RMSPE_mat = matrix(NA,sims,lambda_vals+1)
+pvalue_tstat_mat = matrix(NA,sims,lambda_vals+1)
 
-case = 2
+case = 1
 
 for (iter1 in 1:(lambda_vals+1)){
     lambda_test = lambda_seq[iter1]
     for (iter2 in 1:sims){
         
         data_mat = gen_data(case, J1, T1)
-
-        treatment_vec = gen_treatment(case, lambda_test, T0, T1)
-
+        treatment_vec = gen_treatment_varying(case, lambda_test, T0, T1)
         observed = apply_treatment(case, data_mat, treatment_vec)
-
-        pvalue_RMSPE = ri(observed, T0, T1)$pvalue_RMSPE
-        pvalue_RMSPE_mat[iter2, iter1] = pvalue_RMSPE
+        
+        results = ri(observed, T0, T1)
+        pvalue_RMSPE_mat[iter2, iter1] = results$pvalue_RMSPE
+        pvalue_tstat_mat[iter2, iter1] = results$pvalue_tstat
     }
     
 }
@@ -217,14 +222,30 @@ for (iter1 in 1:(lambda_vals+1)){
 # Plot p-values conditional on size
 space = 10
 size = linspace(0,1,space+1)
-pvalue_plot = matrix(NA,space+1,2)
+pvalue_plot = matrix(NA,space+1,3)
 
 for (i in 0:space+1){
     pvalue_plot[i,1]=size[i]
     pvalue_plot[i,2]=colMeans(pvalue_RMSPE_mat <= size[i])
+    pvalue_plot[i,3]=colMeans(pvalue_tstat_mat <= size[i])
 }
 
 plot(pvalue_plot[,1],pvalue_plot[,2])
+lines(pvalue_plot[,1],pvalue_plot[,3])
+
+
+# 
+# space = 10
+# size = linspace(0,1,space+1)
+# pvalue_plot = matrix(NA,space+1,2)
+# 
+# for (i in 0:space+1){
+#     pvalue_plot[i,1]=size[i]
+#     pvalue_plot[i,2]=colMeans(pvalue_tstat_mat <= size[i])
+# }
+# 
+# plot(pvalue_plot[,1],pvalue_plot[,2])
+
 
 # #Rejection rates
 # size = 0.10
