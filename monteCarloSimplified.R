@@ -48,6 +48,7 @@ ri <- function(observed,T0,T1){
     # Test statistics under consideration
     RMSPE = rep(NA,J1)
     T_stat = rep(NA,J1)
+    Post_treatment_avg = rep(NA,J1)
     
     # RI requires looping over all units (assigning each one the treatment status)
     for (j in 1:(J1)){
@@ -68,6 +69,7 @@ ri <- function(observed,T0,T1){
         
         # Results from each test statitic for a given unit j
         RMSPE[j] = sqrt(mean(effect_post^2))/sqrt(mean(effect_pre^2))
+        
         average_treat = mean(effect[(T0+1):T1])
         std_treat = std(effect[(T0+1):T1])
         T_stat[j] = abs((average_treat/(T1-T0))/(std_treat/sqrt(T1-T0)))
@@ -82,36 +84,6 @@ ri <- function(observed,T0,T1){
 
 gen_data<- function(case, J1, T1){
     data_mat = matrix(NA,T1,J1)
-    # if(case != 1){
-    #     # Creating Tx(J+1) iid shocks
-    #     eta = matrix(rnorm(J+1,0,1 - rho^2), T1, J1)
-    #     
-    #     eps = matrix(0, T1, J1)
-    #     # Initializing t=0 epsilons
-    #     eps[1,] = eta[1,]
-    #     
-    #     # Epsilons are AR(1) process
-    #     for (i in 2:T1){
-    #         eps[i,] = rho * eps[i-1,] + eta[i,]
-    #     }
-    #     
-    #     # Defining time fixed effects
-    #     F = matrix(rnorm(T1,0,1), T1, 1)
-    #     
-    #     # Defining unit fixed effects
-    #     alpha = matrix(0, 1, J1)
-    #     for (i in 1:J1){
-    #         alpha[,i] = rnorm(1,i/J1,1)
-    #     }
-    #     
-    #     # Generate common factors
-    #     F.mat = repmat(F, 1, J1)
-    #     alpha.mat = repmat(alpha, T1, 1)
-    #     
-    #     # Generate untreated outcomes
-    #     data_mat = alpha.mat + F.mat + eps
-    #     
-    # }
     if (case == 4){
         data_mat = matrix(rexp(J1*T1),T1,J1)
     }
