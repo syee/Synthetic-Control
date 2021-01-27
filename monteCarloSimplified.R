@@ -1,4 +1,4 @@
-# Authors Ali Uppal and Steven Yee
+# Authors Cole Dreier, Ali Uppal, and Steven Yee
 # ECON220E
 # Synthetic Control Monte Carlo Simulation
 
@@ -10,39 +10,68 @@ library("pracma")
 library("matrixcalc")
 library("limSolve")
 
+# ==============================
+# (1) Synthetic control function
+# ==============================
+
+# This function delivers the optimal weights for the synthetic control
 sc <- function(treated, control){
-    J <- dim(control)[2] # Number of units in donor pool (Y0)
+    # Number of units in donor pool is J (i.e., control units)
+    J = dim(control)[2] 
+    
+    # Row vector of 1s (number of columns = units in donor pool)
     e = matrix(1, 1, J)
+    
+    # Constraints that weights must sum to 1 (ex=f)
     f = 1
+    
+    # Square matrix (JxJ) with with ones along diagonal
     g = diag(x=1, J, J)
+    
+    # Weights are non-negative (gx>=h) (removing this improves fit, but by extrapolating!)
     h = matrix(0, J, 1)
+    
+    # Least Squares with Equalities and Inequalities to solve weights
     weights = lsei(A=control, B=treated,E=e,F=f,G=g,H=h, type=2)$X
     return(list(weights=weights))
 }
 
-ri <- function(observed,T0,T1){
-    J1 <- dim(observed)[2]
-    
-    #Add other test statistics
-    RMSPE = rep(NA,J1)
+# ====================================
+# (2) Randomisation inference function
+# ====================================
 
+# This function generates a p-value using randomisation inference
+ri <- function(observed,T0,T1){
+    # Number of total units (treated + control)
+    J1 = dim(observed)[2]
+    
+    # Test statistics under consideration
+    RMSPE = rep(NA,J1)
+    
+    # RI requires looping over all units (assigning each one the treatment status)
     for (j in 1:(J1)){
-        treated <- observed[,j] # Making jth unit the "treated"
-        control <- observed[,-j] # Excludes the jth column and uses everything else as control
+        # Making jth unit the "treated"
+        treated = observed[,j] 
         
-        # Caluculate synthetic control and weights
-        weights <- sc(treated[1:T0],control[1:T0,])$weights
+        # Excludes the jth column and uses everything else as control
+        control = observed[,-j] 
+        
+        # Caluculate the synthetic control and weights (uses sc function!)
+        weights = sc(treated[1:T0],control[1:T0,])$weights
         synth_control = control%*%weights
         
-        # Calculate treatment effect
-        effect <- treated - synth_control
-        effect_pre <- effect[1:T0]
-        effect_post <- effect[(T0+1):T1]
-        # test statistic is the ration of RMSPEs
-        RMSPE[j] <- sqrt(mean(effect_post^2))/sqrt(mean(effect_pre^2))
+        # Calculate treatment effect (treatment takes place at T0+1)
+        effect = treated - synth_control
+        effect_pre = effect[1:T0]
+        effect_post = effect[(T0+1):T1]
+        
+        # Results from each test statitic for a given unit j
+        RMSPE[j] = sqrt(mean(effect_post^2))/sqrt(mean(effect_pre^2))
     }
     
-    pvalue_RMPSE <- mean(RMSPE>=RMSPE[1])
+    # Pvalue for each test stat is proportion of placebos with a greater test stat
+    # than actual treated unit which is the first entry in the matrix
+    pvalue_RMPSE = mean(RMSPE>=RMSPE[1])
     return(list(pvalue_RMSPE=pvalue_RMPSE))
 }
 
@@ -131,24 +160,6 @@ gen_data<- function(case, J1, T1){
     return(data_mat)
 }
 
-# gen_treatment <- function(case, lambda, T0, T1){
-#     lambda_vec = rep(0, T1)
-#     lambda_vec[(T0+1):T1] = lambda
-#     treatment_vec = rep(0, T1)
-#     
-#     if(case == 3){
-#         treatment_vec = lambda_vec
-#         # l.vec = linspace(-T0+1, T1-T0,T1) # Vector of time offsets from T0
-#         # treatment.vec = hadamard.prod(lambda.vec, l.vec) # Creates a treatment vector that is time varying like Firpo
-#     }
-#     else if (case == 2){
-#         treatment_vec = lambda_vec
-#     }
-#     else if (case == 1){
-#         treatment_vec = lambda_vec
-#     }
-#     return(treatment_vec)
-# }
 
 gen_treatment <- function(case, lambda, T0, T1){
     treatment_vec = rep(0, T1)
@@ -156,27 +167,20 @@ gen_treatment <- function(case, lambda, T0, T1){
     return(treatment_vec)
 }
 
+gen_treatment_varying <- function(case, lambda, T0, T1){
+    treatment_vec = rep(0, T1)
+    treatment_vec[(T0+1):T1] = lambda
+    time_offset = linspace(-T0+1, T1-T0,T1) # Vector of time offsets from T0
+    treatment_vec = hadamard.prod(treatment_vec, time_offset) # Creates a treatment vector that is time varying like Firpo
+    return(treatment_vec)
+}
+
+
 apply_treatment <- function(case, observed, treatment_vec){
     treated_data = observed
     treated_data[,1] = treated_data[,1] + treatment_vec # This adds the treatment vector to the first column of untreated values. This makes the first column the treated unit
     return(treated_data)
 }
-
-# apply_treatment <- function(case, observed, treatment_vec){
-#     treated_data = observed
-#     if(case == 3){
-#         treated_data[,1] = treated_data[,1] + treatment_vec # This adds the treatment vector to the first column of untreated values. This makes the first column the treated unit
-#         # l.vec = linspace(-T0+1, T1-T0,T1) # Vector of time offsets from T0
-#         # treatment.vec = hadamard.prod(lambda.vec, l.vec) # Creates a treatment vector that is time varying like Firpo
-#     }
-#     else if (case == 2){
-#         treated_data[,1] = treated_data[,1] + treatment_vec # This adds the treatment vector to the first column of untreated values. This makes the first column the treated unit
-#     }
-#     else if (case == 1) || (case == 2){
-#         treated_data[,1] = treated_data[,1] + treatment_vec # This adds the treatment vector to the first column of untreated values. This makes the first column the treated unit
-#     }
-#     return(treated_data)
-# }
 
 
 T1  = 25
@@ -192,7 +196,7 @@ lambda_seq = linspace(0, 0, lambda_vals+1)
 
 pvalue_RMSPE_mat = matrix(NA,sims,lambda_vals+1)
 
-case = 3
+case = 2
 
 for (iter1 in 1:(lambda_vals+1)){
     lambda_test = lambda_seq[iter1]
