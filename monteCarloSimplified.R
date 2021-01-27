@@ -17,19 +17,19 @@ library("limSolve")
 # This function delivers the optimal weights for the synthetic control
 sc <- function(treated, control){
     # Number of units in donor pool is J (i.e., control units)
-    J = dim(control)[2] 
+    J0 = dim(control)[2] 
     
     # Row vector of 1s (number of columns = units in donor pool)
-    e = matrix(1, 1, J)
+    e = matrix(1, 1, J0)
     
     # Constraints that weights must sum to 1 (ex=f)
     f = 1
     
     # Square matrix (JxJ) with with ones along diagonal
-    g = diag(x=1, J, J)
+    g = diag(x=1, J0, J0)
     
     # Weights are non-negative (gx>=h) (removing this improves fit, but by extrapolating!)
-    h = matrix(0, J, 1)
+    h = matrix(0, J0, 1)
     
     # Least Squares with Equalities and Inequalities to solve weights
     weights = lsei(A=control, B=treated,E=e,F=f,G=g,H=h, type=2)$X
@@ -163,52 +163,68 @@ apply_treatment <- function(case, observed, treatment_vec){
 
 T1  = 25
 T0 = 15
-J = 19
-J1 = J + 1
+J0 = 19
+J1 = J0 + 1
 # rho = 0.99
 
 # Simulation Parameters
 sims = 1000
-lambda_vals = 10
-lambda_seq = linspace(0, 2, lambda_vals+1)
-
-pvalue_RMSPE_mat = matrix(NA,sims,lambda_vals+1)
-pvalue_tstat_mat = matrix(NA,sims,lambda_vals+1)
-pvalue_post_mat = matrix(NA,sims,lambda_vals+1)
+lambda_vals = 0
+lambda_start = 0
+lambda_end = 0
+varying = TRUE
 
 case = 3
 
-for (iter1 in 1:(lambda_vals+1)){
-    lambda_test = lambda_seq[iter1]
-    for (iter2 in 1:sims){
-        
-        data_mat = gen_data(case, J1, T1)
-        treatment_vec = gen_treatment_varying(case, lambda_test, T0, T1)
-        observed = apply_treatment(case, data_mat, treatment_vec)
-        
-        results = ri(observed, T0, T1)
-        pvalue_RMSPE_mat[iter2, iter1] = results$pvalue_RMSPE
-        pvalue_tstat_mat[iter2, iter1] = results$pvalue_tstat
-        pvalue_post_mat[iter2, iter1] = results$pvalue_post
-    }
+
+simulate <- function(case,sims,lambda_vals,lambda_start,lambda_end,varying, T0,T1,J0,J1){
     
+    lambda_seq = linspace(lambda_start, lambda_end, lambda_vals+1)
+    pvalue_RMSPE_mat = matrix(NA,sims,lambda_vals+1)
+    pvalue_tstat_mat = matrix(NA,sims,lambda_vals+1)
+    pvalue_post_mat = matrix(NA,sims,lambda_vals+1)
+    
+    for (iter1 in 1:(lambda_vals+1)){
+        lambda_test = lambda_seq[iter1]
+        for (iter2 in 1:sims){
+            data_mat = gen_data(case, J1, T1)
+            if (varying){
+                treatment_vec = gen_treatment_varying(case, lambda_test, T0, T1)
+            }
+            else{
+                treatment_vec = gen_treatment(case, lambda_test, T0, T1)
+            }
+            observed = apply_treatment(case, data_mat, treatment_vec)
+            
+            results = ri(observed, T0, T1)
+            pvalue_RMSPE_mat[iter2, iter1] = results$pvalue_RMSPE
+            pvalue_tstat_mat[iter2, iter1] = results$pvalue_tstat
+            pvalue_post_mat[iter2, iter1] = results$pvalue_post
+        }
+    }
+    return(list(pvalue_RMSPE_mat=pvalue_RMSPE_mat, pvalue_tstat_mat=pvalue_tstat_mat,pvalue_post_mat=pvalue_post_mat))
 }
 
-# Plot p-values conditional on size
-space = 10
-size = linspace(0,1,space+1)
-pvalue_plot = matrix(NA,space+1,4)
+simulation = simulate(case,sims,lambda_vals,lambda_start,lambda_end, varying, T0,T1,J0,J1)
 
-for (i in 0:space+1){
-    pvalue_plot[i,1]=size[i]
-    pvalue_plot[i,2]=colMeans(pvalue_RMSPE_mat <= size[i])
-    pvalue_plot[i,3]=colMeans(pvalue_tstat_mat <= size[i])
-    pvalue_plot[i,4]=colMeans(pvalue_post_mat <= size[i])
-}
 
-plot(pvalue_plot[,1],pvalue_plot[,2],type="l",col="red")
-lines(pvalue_plot[,1],pvalue_plot[,3],type="l",col="blue")
-lines(pvalue_plot[,1],pvalue_plot[,4],type="l",col="black")
-legend("topleft", legend=c("RMSPE", "T-stat","Post-Treatment"),
-       col=c("red", "blue","black"),lty=1:1, cex=0.8)
+
+# 
+# # Plot p-values conditional on size
+# space = 10
+# size = linspace(0,1,space+1)
+# pvalue_plot = matrix(NA,space+1,4)
+# 
+# for (i in 0:space+1){
+#     pvalue_plot[i,1]=size[i]
+#     pvalue_plot[i,2]=colMeans(pvalue_RMSPE_mat <= size[i])
+#     pvalue_plot[i,3]=colMeans(pvalue_tstat_mat <= size[i])
+#     pvalue_plot[i,4]=colMeans(pvalue_post_mat <= size[i])
+# }
+# 
+# plot(pvalue_plot[,1],pvalue_plot[,2],type="l",col="red")
+# lines(pvalue_plot[,1],pvalue_plot[,3],type="l",col="blue")
+# lines(pvalue_plot[,1],pvalue_plot[,4],type="l",col="black")
+# legend("topleft", legend=c("RMSPE", "T-stat","Post-Treatment"),
+#        col=c("red", "blue","black"),lty=1:1, cex=0.8)
 
